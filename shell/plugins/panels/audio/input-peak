@@ -31,10 +31,11 @@ set -m
 
 pw-record \
   --target "$target" \
+  --raw \
   --format f32 \
   --rate "$rate" \
   --channels "$channels" \
-  --latency "$window_frames/$rate" \
+  --latency "${window_ms}ms" \
   - 2>/dev/null |
   od -An -tf4 -w4 -v |
   awk -v samples="$window_samples" '

@@ -57,10 +57,13 @@ JS
 
 # input-peak's arithmetic, with a stub pw-record on PATH standing in for the
 # device: two 40 ms windows of stereo f32 samples, peaking at 0.5 and then 0.25.
+# It emits nothing unless asked for the node, for headerless samples (without
+# --raw pw-record writes an AU header) and for a latency pw-record can parse.
 stub_dir=$(mktemp -d)
 trap 'rm -rf "$stub_dir"' EXIT
 cat > "$stub_dir/pw-record" <<'STUB'
 #!/bin/bash
+[[ " $* " == *" --target stub-node "* && " $* " == *" --raw "* && " $* " =~ \ --latency\ [0-9]+(ns|us|ms|s)?\  ]] || exit 1
 node -e '
   const frames = 640, channels = 2
   const out = new Float32Array(frames * channels * 2)
