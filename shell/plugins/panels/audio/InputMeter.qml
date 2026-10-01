@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Pipewire
 import "Model.js" as Model
@@ -20,7 +21,7 @@ Item {
   readonly property bool usesProcess: Model.needsProcessMeter(
     node && node.audio ? node.audio.channels : null, PwAudioChannel.AuxRangeStart)
 
-  readonly property string scriptPath: Qt.resolvedUrl("input-peak").toString().replace(/^file:\/\//, "")
+  readonly property string scriptPath: Quickshell.env("OMARCHY_PATH") + "/shell/plugins/panels/audio/input-peak"
 
   // What input-peak should be capturing right now, or [] for nothing. The
   // process is driven from this rather than from a `running` binding so a
