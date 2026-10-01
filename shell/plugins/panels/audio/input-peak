@@ -43,7 +43,7 @@ pw-record \
       v = ($1 < 0) ? -$1 : $1
       if (v > peak) peak = v
       if (++count >= samples) {
-        printf "%.5f\n", peak
+        printf "%g\n", peak
         fflush()
         peak = 0
         count = 0

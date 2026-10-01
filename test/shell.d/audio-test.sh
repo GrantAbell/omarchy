@@ -56,7 +56,8 @@ assert(audio.streamRepresentsPlayer(streams[1], players[0], players, streams), '
 JS
 
 # input-peak's arithmetic, with a stub pw-record on PATH standing in for the
-# device: two 40 ms windows of stereo f32 samples, peaking at 0.5 and then 0.25.
+# device: three 40 ms windows of stereo f32 samples, peaking at 0.5, 0.25 and a
+# quiet 0.000001, which the panel still shows once the source volume is divided out.
 # It emits nothing unless asked for the node, for headerless samples (without
 # --raw pw-record writes an AU header) and for a latency pw-record can parse.
 stub_dir=$(mktemp -d)
@@ -66,23 +67,24 @@ cat > "$stub_dir/pw-record" <<'STUB'
 [[ " $* " == *" --target stub-node "* && " $* " == *" --raw "* && " $* " =~ \ --latency\ [0-9]+(ns|us|ms|s)?\  ]] || exit 1
 node -e '
   const frames = 640, channels = 2
-  const out = new Float32Array(frames * channels * 2)
+  const out = new Float32Array(frames * channels * 3)
   out[0] = -0.5
   out[frames * channels + 1] = 0.25
+  out[frames * channels * 2] = 0.000001
   process.stdout.write(Buffer.from(out.buffer))
 '
 STUB
 chmod +x "$stub_dir/pw-record"
 
 peaks=$(PATH="$stub_dir:$PATH" bash "$ROOT/shell/plugins/panels/audio/input-peak" stub-node 2 | tr '\n' ' ')
-if [[ $peaks == "0.50000 0.25000 " ]]; then
+if [[ $peaks == "0.5 0.25 1e-06 " ]]; then
   pass "input-peak reports the largest magnitude per window across channels"
 else
   fail "input-peak reports the largest magnitude per window across channels" "got: $peaks"
 fi
 
 peaks=$(PATH="$stub_dir:$PATH" bash "$ROOT/shell/plugins/panels/audio/input-peak" stub-node 0 | tr '\n' ' ')
-if [[ $peaks == "0.50000 0.00000 0.25000 0.00000 " ]]; then
+if [[ $peaks == "0.5 0 0.25 0 1e-06 0 " ]]; then
   pass "input-peak treats a channel count below one as mono"
 else
   fail "input-peak treats a channel count below one as mono" "got: $peaks"
