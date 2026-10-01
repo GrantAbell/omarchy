@@ -37,20 +37,18 @@ Item {
 
   function syncProcess() {
     var want = processCommand
-    if (meterProcess.running) {
-      if (meterProcess.command.join("\n") === processKey) return
-      // Quickshell treats running=false followed by running=true as a
-      // restart once the old process has exited, with whatever command is
-      // set by then.
+    if (want.length === 0) {
       meterProcess.running = false
-      if (want.length > 0) {
-        meterProcess.command = want
-        meterProcess.running = true
-      }
-    } else if (want.length > 0) {
-      meterProcess.command = want
-      meterProcess.running = true
+      return
     }
+    // Quickshell treats running=false followed by running=true as a
+    // restart once the old process has exited, with whatever command is
+    // set by then. Setting running=true even when the command is unchanged
+    // re-arms a start that a stop cancelled while the old process exits.
+    if (meterProcess.running && meterProcess.command.join("\n") !== processKey)
+      meterProcess.running = false
+    meterProcess.command = want
+    meterProcess.running = true
   }
 
   // The script reports the captured signal, which already has the source's
