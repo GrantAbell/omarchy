@@ -109,7 +109,8 @@ fi
 # InputMeter itself, offscreen, against a stand-in AUX node and a stub
 # pw-record that streams a constant 0.5 for about ten seconds and logs each start.
 work=$(mktemp -d)
-trap 'rm -rf "$stub_dir" "$work"' EXIT
+work_exit=$(mktemp -d)
+trap 'rm -rf "$stub_dir" "$work" "$work_exit"' EXIT
 mkdir -p "$work/bin" "$work/config" "$work/runtime" "$work/home"
 chmod 700 "$work/runtime"
 node -e 'process.stdout.write(Buffer.from(new Float32Array(1280).fill(0.5).buffer))' > "$work/bin/chunk"
@@ -134,4 +135,34 @@ if grep -q 'INPUT_METER_TEST_PASS' "$work/log" && (( starts == 2 )); then
   pass "InputMeter restarts its capture after a stop and start in one turn"
 else
   fail "InputMeter restarts its capture after a stop and start in one turn" "captures started: $starts; $(grep -E 'INPUT_METER|ERROR|WARN' "$work/log")"
+fi
+
+# A capture that exits while the panel stays open, as pw-record does when
+# PipeWire restarts, is started again. The stub's first run lasts half a second.
+mkdir -p "$work_exit/bin" "$work_exit/config" "$work_exit/runtime" "$work_exit/home"
+chmod 700 "$work_exit/runtime"
+cp "$work/bin/chunk" "$work_exit/bin/chunk"
+cat > "$work_exit/bin/pw-record" <<'STUB'
+#!/bin/bash
+runs=12
+[[ -f ${0%/*}/starts ]] && runs=250
+echo "$$" >> "${0%/*}/starts"
+for (( i = 0; i < runs; i++ )); do
+  cat "${0%/*}/chunk"
+  sleep 0.04
+done
+STUB
+chmod +x "$work_exit/bin/pw-record"
+cp "$SHELL_TEST_DIR/fixtures/input-meter-exit/shell.qml" "$work_exit/config/shell.qml"
+ln -s "$ROOT/shell/plugins/panels/audio" "$work_exit/config/audio"
+
+PATH="$work_exit/bin:$PATH" HOME="$work_exit/home" XDG_RUNTIME_DIR="$work_exit/runtime" \
+  OMARCHY_PATH="$ROOT" QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME= \
+  QT_STYLE_OVERRIDE= QT_QUICK_BACKEND=software \
+  timeout 15 quickshell -p "$work_exit/config" --no-color >"$work_exit/log" 2>&1 || true
+starts=$(wc -l < "$work_exit/bin/starts" 2>/dev/null || echo 0)
+if grep -q 'INPUT_METER_TEST_PASS' "$work_exit/log" && (( starts == 2 )); then
+  pass "InputMeter starts its capture again after it exits on its own"
+else
+  fail "InputMeter starts its capture again after it exits on its own" "captures started: $starts; $(grep -E 'INPUT_METER|ERROR|WARN' "$work_exit/log")"
 fi

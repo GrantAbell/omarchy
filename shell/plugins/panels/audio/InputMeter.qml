@@ -76,6 +76,18 @@ Item {
     stdout: SplitParser {
       onRead: function(line) { root.applyProcessSample(line) }
     }
-    onRunningChanged: if (!running) root.processPeak = 0
+    onRunningChanged: {
+      if (running) return
+      root.processPeak = 0
+      if (root.processKey !== "") retryTimer.restart()
+    }
+  }
+
+  // pw-record exits on its own when PipeWire restarts or the node drops out
+  // under it; nothing else would start it again while the panel stays open.
+  Timer {
+    id: retryTimer
+    interval: 1000
+    onTriggered: if (!meterProcess.running) root.syncProcess()
   }
 }
