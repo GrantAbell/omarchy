@@ -20,6 +20,17 @@ assert(!audio.needsProcessMeter(null, AUX), 'audio meters nodes without a channe
 assert(audio.needsProcessMeter([AUX, AUX + 1], AUX), 'audio meters AUX channels through the process')
 assert(audio.needsProcessMeter([3, 0], AUX), 'audio meters unknown channels through the process')
 
+// A destroyed PwNode stays truthy but reads back no id, which is the shape the
+// third entry stands in for: it must not reach a Repeater row. The first carries
+// an object like a live node's audio, so a row that is the node itself fails here.
+assertDeepEqual(
+  audio.rowSnapshot([{ id: 0, name: 'alsa_output', audio: { volume: 1 } }, { id: 42 }, {}, null]),
+  [{ id: 0, name: 'alsa_output' }, { id: 42, name: '' }],
+  'audio projects nodes to primitive rows and drops nodes without an id'
+)
+assertDeepEqual(audio.rowSnapshot(undefined), [], 'audio projects a missing list to no rows')
+assert(audio.nodeRow({ id: 7, name: 'bluez_output' }).name === 'bluez_output', 'audio rows carry the node name that identifies them')
+
 assertEqual(audio.outputVolumeName(0, false), 'Silenced', 'audio labels silent output')
 assertEqual(audio.outputVolumeName(0.9, false), 'Party mode', 'audio labels loud output')
 assertEqual(audio.outputVolumeName(0.5, true), 'Muted', 'audio labels muted output')
