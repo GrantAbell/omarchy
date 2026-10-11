@@ -31,6 +31,7 @@ set -m
 
 pw-record \
   --target "$target" \
+  --properties '{ node.name = "omarchy-input-meter" }' \
   --raw \
   --format f32 \
   --rate "$rate" \

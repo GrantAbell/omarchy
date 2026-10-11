@@ -78,9 +78,9 @@ assert(!audio.isUntypedSource({ name: 'virtual_mic', isSink: false, isStream: fa
 
 const nodes = requireFromRoot('shell/Commons/AudioNodesModel.js')
 
-for (const name of ['quickshell', 'quickshell-peak-monitor'])
+for (const name of ['quickshell', 'quickshell-peak-monitor', 'omarchy-input-meter'])
   assert(nodes.isShellLevelMeter(name), 'audio knows the shell meter ' + name)
-for (const name of ['Firefox', 'quickshell-other', '', undefined])
+for (const name of ['Firefox', 'quickshell-other', 'pw-record', '', undefined])
   assert(!nodes.isShellLevelMeter(name), 'audio counts ' + name + ' as a recording')
 
 // Platform hints: none by default, whole-name patterns, and "replaced" only
